@@ -19,9 +19,10 @@ export default async function DashboardLayout({
     .single()
 
   return (
-    <div className="flex min-h-screen bg-gray-50">
+    <div className="flex min-h-screen bg-slate-50">
       <Sidebar user={profile} />
-      <main className="flex-1 overflow-auto">
+      {/* main: on mobile add top padding (for fixed top bar) + bottom padding (for bottom nav) */}
+      <main className="flex-1 overflow-auto pt-14 pb-16 md:pt-0 md:pb-0">
         {children}
       </main>
     </div>

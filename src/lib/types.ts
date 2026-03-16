@@ -74,6 +74,19 @@ export interface AvailabilitySlot {
   created_at: string
 }
 
+export interface KpiGoal {
+  id: string
+  user_id: string
+  domain_id?: string
+  title: string
+  current_value: number
+  target_value: number
+  unit: string
+  color: string
+  created_at: string
+  domain?: Domain
+}
+
 export interface Notification {
   id: string
   from_user_id: string

@@ -4,7 +4,13 @@ import { useState } from 'react'
 import type { Task } from '@/lib/types'
 import TaskCard from './TaskCard'
 
-export default function TaskList({ tasks }: { tasks: Task[] }) {
+export default function TaskList({
+  tasks,
+  onRefresh,
+}: {
+  tasks: Task[]
+  onRefresh?: () => void
+}) {
   const [localTasks, setLocalTasks] = useState(tasks)
 
   function handleStatusChange(taskId: string, newStatus: Task['status']) {
@@ -15,6 +21,14 @@ export default function TaskList({ tasks }: { tasks: Task[] }) {
 
   function handleDelete(taskId: string) {
     setLocalTasks(prev => prev.filter(t => t.id !== taskId))
+    onRefresh?.()
+  }
+
+  function handleEdit(updatedTask: Task) {
+    setLocalTasks(prev =>
+      prev.map(t => t.id === updatedTask.id ? updatedTask : t)
+    )
+    onRefresh?.()
   }
 
   return (
@@ -25,6 +39,7 @@ export default function TaskList({ tasks }: { tasks: Task[] }) {
           task={task}
           onStatusChange={handleStatusChange}
           onDelete={handleDelete}
+          onEdit={handleEdit}
         />
       ))}
     </div>

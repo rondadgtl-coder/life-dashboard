@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Domain, Project, TaskType, TaskPriority } from '@/lib/types'
+import type { Domain, Project, Task, TaskType, TaskPriority } from '@/lib/types'
 
 const typeOptions: { value: TaskType; label: string }[] = [
   { value: 'today', label: 'היום' },
@@ -18,26 +18,26 @@ const priorityOptions: { value: TaskPriority; label: string }[] = [
   { value: 'low', label: 'נמוך' },
 ]
 
-export default function CreateTaskModal({
-  defaultType,
+export default function EditTaskModal({
+  task,
   onClose,
-  onCreated,
+  onSaved,
 }: {
-  defaultType?: TaskType
+  task: Task
   onClose: () => void
-  onCreated: () => void
+  onSaved: (updated: Task) => void
 }) {
   const supabase = createClient()
 
-  const [title, setTitle] = useState('')
-  const [type, setType] = useState<TaskType>(defaultType ?? 'today')
-  const [priority, setPriority] = useState<TaskPriority>('medium')
-  const [domainId, setDomainId] = useState('')
-  const [projectId, setProjectId] = useState('')
-  const [deadline, setDeadline] = useState('')
-  const [notes, setNotes] = useState('')
-  const [recurring, setRecurring] = useState(false)
-  const [recurrenceRule, setRecurrenceRule] = useState('weekly')
+  const [title, setTitle] = useState(task.title)
+  const [type, setType] = useState<TaskType>(task.type)
+  const [priority, setPriority] = useState<TaskPriority>(task.priority)
+  const [domainId, setDomainId] = useState(task.domain_id ?? '')
+  const [projectId, setProjectId] = useState(task.project_id ?? '')
+  const [deadline, setDeadline] = useState(task.deadline ?? '')
+  const [notes, setNotes] = useState(task.notes ?? '')
+  const [recurring, setRecurring] = useState(task.recurring ?? false)
+  const [recurrenceRule, setRecurrenceRule] = useState(task.recurrence_rule ?? 'weekly')
   const [domains, setDomains] = useState<Domain[]>([])
   const [projects, setProjects] = useState<Project[]>([])
   const [loading, setLoading] = useState(false)
@@ -52,27 +52,20 @@ export default function CreateTaskModal({
   }, [])
 
   useEffect(() => {
-    if (!domainId) { setProjects([]); setProjectId(''); return }
+    if (!domainId) { setProjects([]); return }
     async function fetchProjects() {
       const { data } = await supabase.from('projects').select('*').eq('domain_id', domainId).eq('archived', false).order('name')
       setProjects(data ?? [])
-      setProjectId('')
     }
     fetchProjects()
   }, [domainId])
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault()
-    if (!domainId) { setError('יש לבחור תחום'); return }
-    if (!projectId) { setError('יש לבחור פרויקט'); return }
     setLoading(true)
     setError('')
 
-    const { data: { user } } = await supabase.auth.getUser()
-    if (!user) return
-
-    const { error: insertError } = await supabase.from('tasks').insert({
-      user_id: user.id,
+    const updates = {
       title,
       type,
       priority,
@@ -80,16 +73,22 @@ export default function CreateTaskModal({
       project_id: projectId,
       deadline: deadline || null,
       notes: notes || null,
-      status: 'not_started',
       recurring,
       recurrence_rule: recurring ? recurrenceRule : null,
-    })
+    }
 
-    if (insertError) {
-      setError('שגיאה ביצירת המשימה')
+    const { data, error: updateError } = await supabase
+      .from('tasks')
+      .update(updates)
+      .eq('id', task.id)
+      .select('*, domain:domains(*), project:projects(*)')
+      .single()
+
+    if (updateError || !data) {
+      setError('שגיאה בעדכון המשימה')
       setLoading(false)
     } else {
-      onCreated()
+      onSaved(data as Task)
     }
   }
 
@@ -97,7 +96,7 @@ export default function CreateTaskModal({
     <div className="fixed inset-0 bg-black/50 z-50 flex items-center justify-center p-4" onClick={e => e.target === e.currentTarget && onClose()}>
       <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md max-h-[90vh] overflow-y-auto">
         <div className="flex items-center justify-between p-5 border-b border-gray-100 sticky top-0 bg-white rounded-t-2xl">
-          <h2 className="font-semibold text-gray-900">✨ משימה חדשה</h2>
+          <h2 className="font-semibold text-gray-900">✏️ עריכת משימה</h2>
           <button onClick={onClose} className="text-gray-400 hover:text-gray-600 text-xl w-8 h-8 flex items-center justify-center rounded-lg hover:bg-gray-100">✕</button>
         </div>
 
@@ -112,16 +111,15 @@ export default function CreateTaskModal({
               required
               autoFocus
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500"
-              placeholder="מה צריך לעשות?"
             />
           </div>
 
           {/* Domain */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">תחום *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">תחום</label>
             <select
               value={domainId}
-              onChange={e => setDomainId(e.target.value)}
+              onChange={e => { setDomainId(e.target.value); setProjectId('') }}
               className="w-full border border-gray-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-500 bg-white"
             >
               <option value="">בחר תחום...</option>
@@ -131,7 +129,7 @@ export default function CreateTaskModal({
 
           {/* Project */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">פרויקט *</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">פרויקט</label>
             <select
               value={projectId}
               onChange={e => setProjectId(e.target.value)}
@@ -169,7 +167,7 @@ export default function CreateTaskModal({
 
           {/* Deadline */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">דדליין (אופציונלי)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">דדליין</label>
             <input
               type="date"
               value={deadline}
@@ -207,7 +205,7 @@ export default function CreateTaskModal({
 
           {/* Notes */}
           <div>
-            <label className="block text-sm font-medium text-gray-700 mb-1">הערות (אופציונלי)</label>
+            <label className="block text-sm font-medium text-gray-700 mb-1">הערות</label>
             <textarea
               value={notes}
               onChange={e => setNotes(e.target.value)}
@@ -225,7 +223,7 @@ export default function CreateTaskModal({
               disabled={loading}
               className="flex-1 bg-indigo-600 hover:bg-indigo-700 disabled:opacity-50 text-white font-medium py-2.5 rounded-xl text-sm transition"
             >
-              {loading ? 'שומר...' : 'צור משימה'}
+              {loading ? 'שומר...' : 'שמור שינויים'}
             </button>
             <button
               type="button"
