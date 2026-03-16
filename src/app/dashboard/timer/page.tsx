@@ -1,26 +1,56 @@
-import { createClient } from '@/lib/supabase/server'
-import { redirect } from 'next/navigation'
+'use client'
+
+import { useEffect, useState } from 'react'
+import { createClient } from '@/lib/supabase/client'
 import TimerClient from './TimerClient'
+import type { Domain, Project } from '@/lib/types'
 
-export default async function TimerPage() {
-  const supabase = await createClient()
-  const { data: { user } } = await supabase.auth.getUser()
-  if (!user) redirect('/login')
+type DomainWithProjects = Domain & { projects: Project[] }
 
-  const { data: domains } = await supabase
-    .from('domains')
-    .select('*, projects(*)')
-    .eq('user_id', user.id)
-    .eq('archived', false)
-    .order('name')
+export default function TimerPage() {
+  const [loading, setLoading] = useState(true)
+  const [userId, setUserId] = useState('')
+  const [domains, setDomains] = useState<DomainWithProjects[]>([])
+  const [recentEntries, setRecentEntries] = useState<Record<string, unknown>[]>([])
 
-  const { data: recentEntries } = await supabase
-    .from('time_entries')
-    .select('*, domain:domains(name, color, icon), project:projects(name)')
-    .eq('user_id', user.id)
-    .not('ended_at', 'is', null)
-    .order('started_at', { ascending: false })
-    .limit(10)
+  useEffect(() => {
+    async function load() {
+      const supabase = createClient()
+      const { data: { user } } = await supabase.auth.getUser()
+      if (!user) return
+
+      const [{ data: domainsData }, { data: entriesData }] = await Promise.all([
+        supabase
+          .from('domains')
+          .select('*, projects(*)')
+          .eq('user_id', user.id)
+          .eq('archived', false)
+          .order('name'),
+        supabase
+          .from('time_entries')
+          .select('*, domain:domains(name, color, icon), project:projects(name)')
+          .eq('user_id', user.id)
+          .not('ended_at', 'is', null)
+          .order('started_at', { ascending: false })
+          .limit(10),
+      ])
+
+      setUserId(user.id)
+      setDomains((domainsData ?? []) as DomainWithProjects[])
+      setRecentEntries(entriesData ?? [])
+      setLoading(false)
+    }
+
+    load()
+  }, [])
+
+  if (loading) {
+    return (
+      <div className="p-6 flex items-center justify-center h-48 text-gray-400">
+        <span className="text-sm">טוען...</span>
+      </div>
+    )
+  }
 
   return (
     <div className="p-6 max-w-2xl mx-auto">
@@ -29,9 +59,9 @@ export default async function TimerPage() {
         <p className="text-gray-500 text-sm mt-0.5">מעקב שעות לפי תחום ופרויקט</p>
       </div>
       <TimerClient
-        userId={user.id}
-        domains={domains ?? []}
-        recentEntries={recentEntries ?? []}
+        userId={userId}
+        domains={domains}
+        recentEntries={recentEntries}
       />
     </div>
   )
