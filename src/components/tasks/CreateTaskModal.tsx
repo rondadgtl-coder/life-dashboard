@@ -2,7 +2,7 @@
 
 import { useState, useEffect } from 'react'
 import { createClient } from '@/lib/supabase/client'
-import type { Domain, Project, TaskType, TaskPriority } from '@/lib/types'
+import type { Domain, Project, TaskType, TaskPriority, TaskNature } from '@/lib/types'
 
 const typeOptions: { value: TaskType; label: string }[] = [
   { value: 'today', label: 'היום' },
@@ -36,6 +36,7 @@ export default function CreateTaskModal({
   const [projectId, setProjectId] = useState('')
   const [deadline, setDeadline] = useState('')
   const [notes, setNotes] = useState('')
+  const [nature, setNature] = useState<TaskNature>('proactive')
   const [recurring, setRecurring] = useState(false)
   const [recurrenceRule, setRecurrenceRule] = useState('weekly')
   const [domains, setDomains] = useState<Domain[]>([])
@@ -76,6 +77,9 @@ export default function CreateTaskModal({
       title,
       type,
       priority,
+      task_nature: nature,
+      is_inbox: type === 'inbox',
+      is_focus: false,
       domain_id: domainId,
       project_id: projectId,
       deadline: deadline || null,
@@ -182,6 +186,21 @@ export default function CreateTaskModal({
               >
                 {priorityOptions.map(o => <option key={o.value} value={o.value}>{o.label}</option>)}
               </select>
+            </div>
+          </div>
+
+          {/* Nature */}
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-1">אופי המשימה</label>
+            <div className="flex gap-2">
+              <button type="button" onClick={() => setNature('proactive')}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition border ${nature === 'proactive' ? 'bg-indigo-600 text-white border-indigo-600' : 'bg-white text-slate-600 border-slate-200 hover:border-indigo-300'}`}>
+                🎯 יזום
+              </button>
+              <button type="button" onClick={() => setNature('reactive')}
+                className={`flex-1 py-2 rounded-xl text-sm font-medium transition border ${nature === 'reactive' ? 'bg-orange-500 text-white border-orange-500' : 'bg-white text-slate-600 border-slate-200 hover:border-orange-300'}`}>
+                🔥 ריאקטיבי
+              </button>
             </div>
           </div>
 

@@ -9,7 +9,10 @@ const heebo = Heebo({
 
 export const metadata: Metadata = {
   title: 'Life Dashboard',
+  manifest: '/manifest.json',
   description: 'לוח חיים לזוג עסוק',
+  themeColor: '#6366f1',
+  appleWebApp: { capable: true, statusBarStyle: 'black-translucent', title: 'Life Dashboard' },
 }
 
 export default function RootLayout({

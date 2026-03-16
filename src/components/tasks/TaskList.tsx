@@ -39,7 +39,6 @@ export default function TaskList({
           task={task}
           onStatusChange={handleStatusChange}
           onDelete={handleDelete}
-          onEdit={handleEdit}
         />
       ))}
     </div>

@@ -1,10 +1,12 @@
 export type WeekType = 'A' | 'B'
-export type TaskType = 'today' | 'week' | 'month' | 'quarter' | 'year'
+export type TaskType = 'today' | 'week' | 'month' | 'quarter' | 'year' | 'inbox'
 export type TaskPriority = 'low' | 'medium' | 'high'
-export type TaskStatus = 'not_started' | 'in_progress' | 'done' | 'paused'
+export type TaskStatus = 'not_started' | 'in_progress' | 'done' | 'paused' | 'waiting' | 'blocked'
+export type TaskNature = 'proactive' | 'reactive'
 export type SlotStatus = 'free' | 'busy' | 'flexible' | 'office'
 export type NotificationType = 'slot_request' | 'slot_conflict'
 export type NotificationStatus = 'pending' | 'approved' | 'declined' | 'rescheduled'
+export type DomainHealth = 'on_track' | 'needs_attention' | 'neglected' | 'completed'
 
 export interface User {
   id: string
@@ -12,6 +14,7 @@ export interface User {
   name: string
   avatar_url?: string
   week_type: WeekType
+  google_calendar_connected?: boolean
   created_at: string
 }
 
@@ -22,6 +25,7 @@ export interface Domain {
   color: string
   icon: string
   archived: boolean
+  weekly_hours_goal: number
   created_at: string
 }
 
@@ -43,12 +47,16 @@ export interface Task {
   type: TaskType
   priority: TaskPriority
   status: TaskStatus
+  task_nature: TaskNature
+  is_focus: boolean
+  is_inbox: boolean
   deadline?: string
   estimated_duration?: number
   actual_duration?: number
   notes?: string
   recurring: boolean
   recurrence_rule?: string
+  google_event_id?: string
   created_at: string
   domain?: Domain
   project?: Project
@@ -57,12 +65,14 @@ export interface Task {
 export interface TimeEntry {
   id: string
   user_id: string
-  task_id: string
+  task_id?: string
   domain_id: string
   project_id: string
   started_at: string
   ended_at?: string
   duration_seconds?: number
+  domain?: Domain
+  project?: Project
 }
 
 export interface AvailabilitySlot {
@@ -95,4 +105,10 @@ export interface Notification {
   payload: Record<string, unknown>
   status: NotificationStatus
   created_at: string
+}
+
+export interface DomainStat {
+  domain: Domain
+  hoursThisWeek: number
+  health: DomainHealth
 }

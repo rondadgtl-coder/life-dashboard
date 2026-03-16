@@ -6,16 +6,14 @@ import { createClient } from '@/lib/supabase/client'
 import type { User } from '@/lib/types'
 
 const navItems = [
-  { href: '/dashboard', label: 'היום', icon: '☀️' },
-  { href: '/dashboard/week', label: 'השבוע', icon: '📅' },
-  { href: '/dashboard/tasks', label: 'כל המשימות', icon: '✅' },
-  { href: '/dashboard/calendar', label: 'לוח שנה', icon: '📆' },
-  { href: '/dashboard/availability', label: 'זמינות משותפת', icon: '🗓️' },
-  { href: '/dashboard/domains', label: 'תחומים ופרויקטים', icon: '📂' },
-  { href: '/dashboard/timer', label: 'טיימר', icon: '⏱️' },
+  { href: '/dashboard',           label: 'דשבורד',   icon: '🏠' },
+  { href: '/dashboard/tasks',     label: 'משימות',   icon: '✅' },
+  { href: '/dashboard/calendar',  label: 'לוח שנה',  icon: '📅' },
+  { href: '/dashboard/together',  label: 'יחד',      icon: '👥' },
+  { href: '/dashboard/settings',  label: 'הגדרות',   icon: '⚙️' },
 ]
 
-const mobileNavItems = navItems.slice(0, 5)
+const mobileNavItems = navItems
 
 export default function Sidebar({ user }: { user: User | null }) {
   const pathname = usePathname()
@@ -52,7 +50,9 @@ export default function Sidebar({ user }: { user: User | null }) {
         {/* Nav */}
         <nav className="flex-1 px-3 py-4 space-y-0.5">
           {navItems.map(item => {
-            const isActive = pathname === item.href
+            const isActive = item.href === '/dashboard'
+              ? pathname === '/dashboard'
+              : pathname.startsWith(item.href)
             return (
               <Link
                 key={item.href}
@@ -118,7 +118,9 @@ export default function Sidebar({ user }: { user: User | null }) {
       {/* ─── Mobile Bottom Nav ────────────────────────────────────────── */}
       <nav className="md:hidden fixed bottom-0 right-0 left-0 z-40 bg-slate-900 border-t border-slate-700/50 px-2 h-16 flex items-center justify-around shadow-2xl">
         {mobileNavItems.map(item => {
-          const isActive = pathname === item.href
+          const isActive = item.href === '/dashboard'
+            ? pathname === '/dashboard'
+            : pathname.startsWith(item.href)
           return (
             <Link
               key={item.href}
