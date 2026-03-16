@@ -89,6 +89,24 @@ export default function CreateTaskModal({
       setError('שגיאה ביצירת המשימה')
       setLoading(false)
     } else {
+      // Auto-sync to Google Calendar if deadline is set
+      if (deadline) {
+        const { data: newTask } = await supabase
+          .from('tasks')
+          .select('id')
+          .eq('user_id', user.id)
+          .eq('title', title)
+          .order('created_at', { ascending: false })
+          .limit(1)
+          .single()
+        if (newTask) {
+          fetch('/api/calendar/sync', {
+            method: 'POST',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ action: 'create', taskId: newTask.id }),
+          }).catch(() => {}) // fire & forget, don't block UI
+        }
+      }
       onCreated()
     }
   }

@@ -88,6 +88,12 @@ export default function EditTaskModal({
       setError('שגיאה בעדכון המשימה')
       setLoading(false)
     } else {
+      // Auto-sync to Google Calendar
+      fetch('/api/calendar/sync', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({ action: 'update', taskId: task.id }),
+      }).catch(() => {})
       onSaved(data as Task)
     }
   }

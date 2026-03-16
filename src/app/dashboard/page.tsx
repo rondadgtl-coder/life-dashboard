@@ -5,6 +5,8 @@ import { createClient } from '@/lib/supabase/client'
 import TaskList from '@/components/tasks/TaskList'
 import CreateTaskButton from '@/components/tasks/CreateTaskButton'
 import TimerWidget from '@/components/TimerWidget'
+import GoogleCalendarButton from '@/components/GoogleCalendarButton'
+import { Suspense } from 'react'
 import type { Task, Domain } from '@/lib/types'
 
 interface DomainStat {
@@ -106,12 +108,17 @@ export default function DashboardPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6">
 
         {/* ── Header ── */}
-        <div className="mb-6 flex items-start justify-between">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900">שלום 👋</h1>
-            <p className="text-sm text-gray-400 mt-0.5">{hebrewDay}</p>
+        <div className="mb-6">
+          <div className="flex items-start justify-between mb-3">
+            <div>
+              <h1 className="text-2xl font-bold text-gray-900">שלום 👋</h1>
+              <p className="text-sm text-gray-400 mt-0.5">{hebrewDay}</p>
+            </div>
+            <CreateTaskButton defaultType="today" onCreated={load} />
           </div>
-          <CreateTaskButton defaultType="today" onCreated={load} />
+          <Suspense fallback={null}>
+            <GoogleCalendarButton />
+          </Suspense>
         </div>
 
         {/* ── 2-column layout ── */}
