@@ -26,34 +26,57 @@ const healthConfig: Record<DomainHealth, { label: string; color: string; bg: str
 function BrainDumpBar({ onCreated }: { onCreated: () => void }) {
   const [text, setText] = useState('')
   const [saving, setSaving] = useState(false)
+  const [error, setError] = useState('')
 
   async function submit(e: React.FormEvent) {
     e.preventDefault()
     if (!text.trim()) return
     setSaving(true)
+    setError('')
     const supabase = createClient()
     const { data: { user } } = await supabase.auth.getUser()
     if (!user) { setSaving(false); return }
+
     const { data: domains } = await supabase.from('domains').select('id').eq('user_id', user.id).eq('archived', false).limit(1)
     const { data: projects } = await supabase.from('projects').select('id').eq('user_id', user.id).eq('archived', false).limit(1)
-    await supabase.from('tasks').insert({
+
+    const domainId = domains?.[0]?.id
+    const projectId = projects?.[0]?.id
+
+    if (!domainId || !projectId) {
+      setError('צריך ליצור לפחות תחום אחד ופרויקט אחד לפני שניתן לשמור משימות')
+      setSaving(false)
+      return
+    }
+
+    const { error: insertError } = await supabase.from('tasks').insert({
       user_id: user.id, title: text.trim(), type: 'inbox', priority: 'medium',
       status: 'not_started', task_nature: 'proactive', is_inbox: true, is_focus: false,
-      recurring: false, domain_id: domains?.[0]?.id ?? null, project_id: projects?.[0]?.id ?? null,
+      recurring: false, domain_id: domainId, project_id: projectId,
     })
+
+    if (insertError) {
+      setError('שגיאה בשמירה: ' + insertError.message)
+      setSaving(false)
+      return
+    }
+
     setText(''); setSaving(false); onCreated()
   }
 
   return (
-    <form onSubmit={submit} className="flex gap-2 mb-6">
-      <input value={text} onChange={e => setText(e.target.value)}
-        placeholder="📥 brain dump — זרוק פה כל מחשבה, בלי לחשוב..."
-        className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm" />
-      <button type="submit" disabled={!text.trim() || saving}
-        className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition">
-        {saving ? '...' : '+ שמור'}
-      </button>
-    </form>
+    <div className="mb-6">
+      <form onSubmit={submit} className="flex gap-2">
+        <input value={text} onChange={e => setText(e.target.value)}
+          placeholder="📥 brain dump — זרוק פה כל מחשבה, בלי לחשוב..."
+          className="flex-1 bg-white border border-slate-200 rounded-xl px-4 py-2.5 text-sm focus:outline-none focus:ring-2 focus:ring-indigo-400 shadow-sm" />
+        <button type="submit" disabled={!text.trim() || saving}
+          className="bg-indigo-600 hover:bg-indigo-700 disabled:opacity-40 text-white px-4 py-2.5 rounded-xl text-sm font-medium transition">
+          {saving ? '...' : '+ שמור'}
+        </button>
+      </form>
+      {error && <p className="text-xs text-red-500 mt-1.5 px-1">{error}</p>}
+    </div>
   )
 }
 
